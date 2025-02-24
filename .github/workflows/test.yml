@@ -1,10 +1,48 @@
-name: Test
+name: Share data between jobs
 on: 
     workflow_dispatch:
 
 jobs:
-    test:
+    job1:
+        name: Add 3 and 7
         runs-on: ubuntu-latest
         steps:
-        - name: Test
-          run: echo HI
+        - shell: bash
+          run: |
+            expr 3 + 7 > math-homework.txt
+        - name: Upload math results for job 1
+          uses: actions/upload-artifact@v4
+          with:
+            name: homework_pre
+            path: math-homework.txt
+    job2:
+        needs: job1
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download math result from job1
+              uses: actions/download-artifact@v4
+              with:
+                name: homework_pre
+            - shell: bash
+              run: |
+                value=`cat math-homework.txt`
+                expr $value \* 9 > math-homework.txt
+            - name: Upload math homework for job2
+              uses: actions/upload-artifact@v4
+              with:
+                name: homework_final
+                path: math-homework.txt
+    job3:
+        needs: job2
+        name: Display results
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download math results from job 2
+              uses: actions/download-artifact@v4
+              with:
+                name: homework_final
+            - name: Print the final result
+              shell: bash
+              run: |
+                value=`cat math-homework.txt`
+                echo the result is $value
